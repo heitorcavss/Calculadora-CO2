@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>EcoTrip — Calculadora de Emissões de CO₂</title>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+
+<!-- ── Header ──────────────────────────────────────────────────────────────── -->
+<header class="site-header">
+  <div class="header-inner">
+    <span class="header-logo">🌿</span>
+    <h1>EcoTrip Calculator</h1>
+    <p class="tagline">Estime o impacto ambiental da sua viagem e descubra alternativas mais sustentáveis.</p>
+  </div>
+</header>
+
+<main>
+
+  <!-- ── Calculator card ──────────────────────────────────────────────────── -->
+  <section class="card" aria-label="Formulário de cálculo">
+    <h2 class="section-title">🗺️ Dados da Viagem</h2>
+
+    <form id="calc-form" novalidate>
+
+      <!-- Input mode toggle -->
+      <div class="input-mode-toggle" role="group" aria-label="Modo de entrada">
+        <input type="radio" name="input-mode" id="mode-map" value="map" checked />
+        <label for="mode-map">🗺️ Buscar rota</label>
+
+        <input type="radio" name="input-mode" id="mode-manual" value="manual" />
+        <label for="mode-manual">✏️ Distância manual</label>
+      </div>
+
+      <!-- Map route search (default) — auto-busca ao selecionar ambas -->
+      <div id="map-section">
+        <div class="form-grid">
+          <div class="field">
+            <label for="origin-city">Cidade de origem</label>
+            <select id="origin-city">
+              <option value="">— Selecione a origem —</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="destination-city">Cidade de destino</label>
+            <select id="destination-city">
+              <option value="">— Selecione o destino —</option>
+            </select>
+          </div>
+        </div>
+        <div id="route-result" class="hidden route-result-info"></div>
+      </div>
+
+      <!-- Manual city search — texto livre -->
+      <div id="manual-distance-section" class="hidden">
+        <div class="form-grid">
+          <div class="field">
+            <label for="origin-text">Cidade de origem</label>
+            <input type="text" id="origin-text" placeholder="Ex: Campinas, SP" autocomplete="off" />
+          </div>
+          <div class="field">
+            <label for="destination-text">Cidade de destino</label>
+            <input type="text" id="destination-text" placeholder="Ex: Uberlândia, MG" autocomplete="off" />
+          </div>
+        </div>
+        <button type="button" id="fetch-manual-btn" class="btn btn--secondary" style="margin-top:.75rem">
+          🔍  Buscar distância
+        </button>
+        <div id="manual-route-result" class="hidden route-result-info"></div>
+      </div>
+
+      <!-- Campo oculto mantido para compatibilidade com syncPlaneType -->
+      <input type="number" id="distance" style="display:none" />
+
+      <!-- Main options grid -->
+      <div class="form-grid" style="margin-top:1rem">
+
+        <div class="field">
+          <label for="transport">Meio de transporte</label>
+          <select id="transport">
+            <option value="car_gasoline">🚗 Carro (Gasolina)</option>
+            <option value="car_diesel">🚙 Carro (Diesel)</option>
+            <option value="car_electric">⚡ Carro Elétrico</option>
+            <option value="motorcycle">🏍️ Moto</option>
+            <option value="bus">🚌 Ônibus</option>
+            <option value="train">🚆 Trem / Metrô</option>
+            <option value="plane_short">✈️ Avião (< 1 000 km)</option>
+            <option value="plane_long">🛫 Avião (> 1 000 km)</option>
+            <option value="bicycle">🚲 Bicicleta</option>
+            <option value="walking">🚶 A Pé</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label for="profile">Perfil do trajeto</label>
+          <select id="profile">
+            <option value="highway">🛣️ Rodovia</option>
+            <option value="mixed">🏙️ Misto</option>
+            <option value="urban">🌆 Urbano</option>
+          </select>
+          <span class="field-hint" id="profile-hint">Percurso em rodovias com fluxo constante (fator base)</span>
+        </div>
+
+        <div class="field">
+          <label for="passengers">Passageiros</label>
+          <input type="number" id="passengers" min="1" max="500" value="1" />
+        </div>
+
+        <div class="field" style="justify-content:flex-end">
+          <label class="checkbox-row">
+            <input type="checkbox" id="round-trip" />
+            <span>↩️ Ida e volta</span>
+          </label>
+        </div>
+
+      </div><!-- /form-grid -->
+
+      <!-- Error -->
+      <div id="error-message" class="hidden" role="alert"></div>
+
+      <!-- Actions -->
+      <div class="btn-row">
+        <button type="button" id="calculate-btn" class="btn btn--primary">
+          🌿  Calcular Emissões
+        </button>
+        <button type="button" id="reset-btn" class="btn btn--secondary">
+          ↺  Limpar
+        </button>
+      </div>
+
+    </form>
+  </section><!-- /calculator card -->
+
+
+  <!-- ── Results ─────────────────────────────────────────────────────────── -->
+  <section id="results" class="hidden" aria-live="polite" aria-label="Resultados">
+
+    <!-- Hero stats -->
+    <div class="card">
+      <h2 class="section-title">📊 Resultado</h2>
+
+      <div id="classification" class="badge" aria-label="Classificação de impacto"></div>
+
+      <div class="hero-stats">
+        <div class="stat-box stat-box--hero">
+          <span class="stat-label">CO₂ por pessoa</span>
+          <span class="stat-value" id="co2-value">—</span>
+        </div>
+        <div class="stat-box">
+          <span class="stat-label">Total (todos os passageiros)</span>
+          <span class="stat-value" id="total-co2">—</span>
+        </div>
+        <div class="stat-box">
+          <span class="stat-label">Distância total</span>
+          <span class="stat-value" id="total-distance">—</span>
+        </div>
+        <div class="stat-box">
+          <span class="stat-label">🌳 Árvores p/ compensar</span>
+          <span class="stat-value" id="trees-needed">—</span>
+        </div>
+      </div>
+
+      <!-- Meter -->
+      <div class="meter-wrap">
+        <div class="meter-labels">
+          <span>🌱 Baixo</span>
+          <span>🌿 Moderado</span>
+          <span>🌍 Alto</span>
+        </div>
+        <div class="meter-bg" role="progressbar" aria-label="Escala de impacto">
+          <div id="co2-meter-fill"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Comparison -->
+    <div class="card">
+      <h2 class="section-title">⚖️ Comparativo por transporte</h2>
+      <div id="comparison-list"></div>
+    </div>
+
+    <!-- Tips -->
+    <div class="card">
+      <h2 class="section-title">💡 Dicas para reduzir seu impacto</h2>
+      <div id="tips-container"></div>
+    </div>
+
+  </section><!-- /results -->
+
+</main>
+
+<footer class="site-footer">
+  <p>EcoTrip Calculator · Fatores de emissão baseados em médias do setor de transportes · 2026</p>
+  <p style="margin-top:.4rem">Roteamento via <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener" style="color:inherit">© OpenStreetMap</a> contributors</p>
+</footer>
+
+<!-- Scripts — ordem importa: dados → config → lógica → UI → app -->
+<script src="js/routes-data.js"></script>
+<script src="js/config.js"></script>
+<script src="js/calculator.js"></script>
+<script src="js/routing.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(find \"/mnt/c/Users/heito/OneDrive/Desktop/co2\" -type f | sort)",
+      "Read(//mnt/c/Users/heito/OneDrive/Desktop/**)"
+    ]
+  }
+}
